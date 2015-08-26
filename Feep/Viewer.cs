@@ -186,7 +186,6 @@ namespace Feep
             Picture.MouseUp += new MouseEventHandler(Viewer_MouseUp);
             Picture.MouseMove += new MouseEventHandler(Viewer_MouseMove);
             this.MouseWheel += Viewer_MouseWheel;
-            Picture.MouseWheel += Viewer_MouseWheel;
 
             timerBackColor.Interval = 32;
             timerBackColor.Tick += timerBackColor_Tick;
@@ -1010,7 +1009,7 @@ namespace Feep
                 return;
             }
 
-            if (e.Delta == 120)
+            if (e.Delta > 0)
             {
                 if (RightButtonsPress == true && LeftButtonsPress == false)
                 {
@@ -1031,7 +1030,7 @@ namespace Feep
                 Next();
 
             }
-            else if (e.Delta == -120)
+            else if (e.Delta < 0)
             {
                 if (RightButtonsPress == true && LeftButtonsPress == false)
                 {

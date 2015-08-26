@@ -14,6 +14,7 @@ namespace Feep
         [STAThread]
         static void Main(String[] args)
         {
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Viewer viewer;
