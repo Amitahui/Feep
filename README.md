@@ -19,7 +19,8 @@
 * 复制地址：Ctrl+A。
 * 渐变背景：Ctrl+B（开始/停止）。
 * 复制图像：Ctrl+C。
-* 删除图片：Shift+Delete（直接删除，不移入回收站）。
+* 删除文件：Shift+Delete（直接删除，不移入回收站）。
+* 定位文件：Shift+Enter
 * 切换图片：Up/Down。
 * 旋转图片：Left/Right。
 * 全屏/窗口：空格键。
