@@ -14,7 +14,7 @@ namespace Feep.Configure
     public partial class Configure : Form
     {
         [DllImport("kernel32")]
-        private static extern int GetPrivateProfileString(string section, string key, string def, System.Text.StringBuilder retVal, int size, string filePath);
+        private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
 
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
@@ -60,64 +60,6 @@ namespace Feep.Configure
 
         [DllImport("shell32.dll")]
         static extern void SHChangeNotify(HChangeNotifyEventID wEventId, HChangeNotifyFlags uFlags, IntPtr dwItem1, IntPtr dwItem2);
-
-        string backColor = "";
-
-        public Configure()
-        {
-            InitializeComponent();
-
-            System.Text.StringBuilder ReturnedString = new System.Text.StringBuilder(255);
-            GetPrivateProfileString("Screen", "BackColor", "#444444", ReturnedString, 255, System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-            backColor = ReturnedString.ToString();
-            try
-            {
-                pnlColor.BackColor = System.Drawing.ColorTranslator.FromHtml(backColor);
-                txtColor.Text = backColor.Substring(1);
-            }
-            catch
-            {
-                pnlColor.BackColor = System.Drawing.Color.Black;
-            }
-        }
-
-        private void txtColor_TextChanged(object sender, EventArgs e)
-        {
-            if (txtColor.Text.Length == 6)
-            {
-                try
-                {
-                    pnlColor.BackColor = System.Drawing.ColorTranslator.FromHtml("#" + txtColor.Text);
-                    backColor = "#" + txtColor.Text;
-                }
-                catch (Exception)
-                {
-                }
-            }
-        }
-
-        private void txtColor_MouseClick(object sender, MouseEventArgs e)
-        {
-            txtColor.SelectAll();
-        }
-
-        private void btnSetting_Click(object sender, EventArgs e)
-        {
-            WritePrivateProfileString("Location", "X", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.1).ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Location", "Y", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.1).ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Size", "Width", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.8).ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Size", "Height", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.8).ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Screen", "Options", "None", System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Screen", "BackColor", System.Drawing.ColorTranslator.ToHtml(pnlColor.BackColor), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-
-            RegisterFileType(".jpg", "Feep JPG File", Application.StartupPath + @"\Icon\JPG.ico", Application.StartupPath + @"\Feep.exe", cbJPG.Checked);
-            RegisterFileType(".bmp", "Feep BMP File", Application.StartupPath + @"\Icon\BMP.ico", Application.StartupPath + @"\Feep.exe", cbBMP.Checked);
-            RegisterFileType(".png", "Feep PNG File", Application.StartupPath + @"\Icon\PNG.ico", Application.StartupPath + @"\Feep.exe", cbPNG.Checked);
-            RegisterFileType(".gif", "Feep GIF File", Application.StartupPath + @"\Icon\GIF.ico", Application.StartupPath + @"\Feep.exe", cbGIF.Checked);
-            RegisterFileType(".tif", "Feep TIF File", Application.StartupPath + @"\Icon\TIF.ico", Application.StartupPath + @"\Feep.exe", cbTIF.Checked);
-
-            MessageBox.Show("设置成功！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
 
         public static void RegisterFileType(string ExtendName, string Description, string IcoPath, string ExePath, bool Wish)
         {
@@ -169,5 +111,131 @@ namespace Feep.Configure
             SHChangeNotify(HChangeNotifyEventID.SHCNE_ASSOCCHANGED, HChangeNotifyFlags.SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
         }
 
+        int PointX, PointY, SizeWidth, SizeHeight;
+        string screen = "", backColor = "";
+        int startState = 0;
+        bool showInTaskbar = false;
+
+        public Configure()
+        {
+            InitializeComponent();
+
+            System.Text.StringBuilder ReturnedString = new System.Text.StringBuilder(255);
+
+            GetPrivateProfileString("Location", "X", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.1).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            Int32.TryParse(ReturnedString.ToString(), out PointX);
+            GetPrivateProfileString("Location", "Y", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.1).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            Int32.TryParse(ReturnedString.ToString(), out PointY);
+            GetPrivateProfileString("Size", "Width", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.8).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            Int32.TryParse(ReturnedString.ToString(), out SizeWidth);
+            GetPrivateProfileString("Size", "Height", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.8).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            Int32.TryParse(ReturnedString.ToString(), out SizeHeight);
+            GetPrivateProfileString("Form", "Screen", "None", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            screen = ReturnedString.ToString();
+            GetPrivateProfileString("Form", "BackColor", "#000000", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            backColor = ReturnedString.ToString();
+            GetPrivateProfileString("Form", "StartState", "0", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            Int32.TryParse(ReturnedString.ToString(), out startState);
+            GetPrivateProfileString("Form", "ShowInTaskbar", "False", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            Boolean.TryParse(ReturnedString.ToString(), out showInTaskbar);
+
+            numWidth.Value = SizeWidth;
+            numHeight.Value = SizeHeight;
+
+            try
+            {
+                pnlColor.BackColor = ColorTranslator.FromHtml(backColor);
+                txtColor.Text = backColor.Substring(1);
+            }
+            catch
+            {
+                pnlColor.BackColor = Color.Black;
+            }
+
+            cmbFormStartState.SelectedIndex = startState;
+            chkShowInTaskbar.Checked = showInTaskbar;
+
+        }
+
+        private void txtColor_TextChanged(object sender, EventArgs e)
+        {
+            if (txtColor.Text.Length == 6)
+            {
+                try
+                {
+                    pnlColor.BackColor = ColorTranslator.FromHtml("#" + txtColor.Text);
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        private void txtColor_MouseClick(object sender, MouseEventArgs e)
+        {
+            txtColor.SelectAll();
+        }
+
+        private void btnSetting_Click(object sender, EventArgs e)
+        {
+            switch (cmbFormStartState.SelectedIndex)
+            {
+                case 1:
+                    {
+                        PointX = Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.1);
+                        PointY = Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.1);
+                        SizeWidth = Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.8);
+                        SizeHeight = Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.8);
+                    }
+                    break;
+                case 2:
+                    {
+                        SizeWidth = (int)numWidth.Value;
+                        SizeHeight = (int)numHeight.Value;
+                        PointX = (Screen.PrimaryScreen.Bounds.Width - SizeWidth) / 2;
+                        PointY = (Screen.PrimaryScreen.Bounds.Height - SizeHeight) / 2;
+                    }
+                    break;
+            }
+
+            WritePrivateProfileString("Location", "X", PointX.ToString(), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Location", "Y", PointY.ToString(), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Size", "Width", SizeWidth.ToString(), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Size", "Height", SizeHeight.ToString(), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Form", "Screen", "None", Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Form", "BackColor", ColorTranslator.ToHtml(pnlColor.BackColor), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Form", "StartState", cmbFormStartState.SelectedIndex.ToString(), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Form", "ShowInTaskbar", chkShowInTaskbar.Checked.ToString(), Application.StartupPath + @".\configure.ini");
+
+            RegisterFileType(".jpg", "Feep JPG File", Application.StartupPath + @"\Icon\JPG.ico", Application.StartupPath + @"\Feep.exe", cbJPG.Checked);
+            RegisterFileType(".bmp", "Feep BMP File", Application.StartupPath + @"\Icon\BMP.ico", Application.StartupPath + @"\Feep.exe", cbBMP.Checked);
+            RegisterFileType(".png", "Feep PNG File", Application.StartupPath + @"\Icon\PNG.ico", Application.StartupPath + @"\Feep.exe", cbPNG.Checked);
+            RegisterFileType(".gif", "Feep GIF File", Application.StartupPath + @"\Icon\GIF.ico", Application.StartupPath + @"\Feep.exe", cbGIF.Checked);
+            RegisterFileType(".tif", "Feep TIF File", Application.StartupPath + @"\Icon\TIF.ico", Application.StartupPath + @"\Feep.exe", cbTIF.Checked);
+
+            MessageBox.Show("设置成功！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void cmbFormStartState_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            switch (cmbFormStartState.SelectedIndex)
+            {
+                case 0:
+                case 1:
+                    {
+                        numWidth.Visible = false;
+                        numHeight.Visible = false;
+                        lblMultiply.Visible = false;
+                    }
+                    break;
+                case 2:
+                    {
+                        numWidth.Visible = true;
+                        numHeight.Visible = true;
+                        lblMultiply.Visible = true;
+                    }
+                    break;
+            }
+        }
     }
 }

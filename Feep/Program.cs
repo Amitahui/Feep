@@ -14,7 +14,6 @@ namespace Feep
         [STAThread]
         static void Main(String[] args)
         {
-
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Viewer viewer;
@@ -23,25 +22,40 @@ namespace Feep
             {
                 int PointX, PointY, Width, Height;
                 string screen = "", backColor = "";
+                int startState = 0;
+                bool showInTaskbar = false;
+
                 viewer = new Viewer(args[0]);
                 System.Text.StringBuilder ReturnedString = new System.Text.StringBuilder(255);
 
-                bool atCenter = false;
+                bool hasError = false;
 
-                GetPrivateProfileString("Screen", "BackColor", "#000000", ReturnedString, 255, System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                backColor = ReturnedString.ToString();
-                GetPrivateProfileString("Screen", "Options", "None", ReturnedString, 255, System.Windows.Forms.Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Location", "X", "", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                hasError = !Int32.TryParse(ReturnedString.ToString(), out PointX);
+                GetPrivateProfileString("Location", "Y", "", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                hasError = !Int32.TryParse(ReturnedString.ToString(), out PointY);
+                GetPrivateProfileString("Size", "Width", "", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                hasError = !Int32.TryParse(ReturnedString.ToString(), out Width);
+                GetPrivateProfileString("Size", "Height", "", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                hasError = !Int32.TryParse(ReturnedString.ToString(), out Height);
+                GetPrivateProfileString("Form", "Screen", "None", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
                 screen = ReturnedString.ToString();
-                GetPrivateProfileString("Location", "X", "", ReturnedString, 255, System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                atCenter = !Int32.TryParse(ReturnedString.ToString(), out PointX);
-                GetPrivateProfileString("Location", "Y", "", ReturnedString, 255, System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                atCenter = !Int32.TryParse(ReturnedString.ToString(), out PointY);
-                GetPrivateProfileString("Size", "Width", "", ReturnedString, 255, System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                atCenter = !Int32.TryParse(ReturnedString.ToString(), out Width);
-                GetPrivateProfileString("Size", "Height", "", ReturnedString, 255, System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                atCenter = !Int32.TryParse(ReturnedString.ToString(), out Height);
+                GetPrivateProfileString("Form", "BackColor", "#000000", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                backColor = ReturnedString.ToString();
+                GetPrivateProfileString("Form", "StartState", "0", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                Int32.TryParse(ReturnedString.ToString(), out startState);
+                GetPrivateProfileString("Form", "ShowInTaskbar", "False", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                Boolean.TryParse(ReturnedString.ToString(), out showInTaskbar);
 
-                if (atCenter || PointX > SystemInformation.VirtualScreen.Right || PointY > SystemInformation.VirtualScreen.Bottom || Width > SystemInformation.VirtualScreen.Width || Height > SystemInformation.VirtualScreen.Height)
+                viewer.StartState = startState;
+
+                if (showInTaskbar)
+                {
+                    viewer.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+                    viewer.ShowInTaskbar = true;
+                }
+
+                if (hasError || PointX > SystemInformation.VirtualScreen.Right || PointY > SystemInformation.VirtualScreen.Bottom || Width > SystemInformation.VirtualScreen.Width || Height > SystemInformation.VirtualScreen.Height)
                 {
                     PointX = Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.1);
                     PointY = Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.1);
@@ -60,6 +74,18 @@ namespace Feep
                     viewer.Picture.BackColor = viewer.BackColor;
                 }
 
+
+                if (startState == 1)
+                {
+                    screen = "Full";
+                }
+
+                if (startState == 2)
+                {
+                    screen = "None";
+                    PointX = (Screen.PrimaryScreen.Bounds.Width - Width) / 2;
+                    PointY = (Screen.PrimaryScreen.Bounds.Height - Height) / 2;
+                }
 
                 if (screen != "None")
                 {

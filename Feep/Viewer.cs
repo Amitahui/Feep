@@ -14,7 +14,7 @@ namespace Feep
     sealed internal partial class Viewer : Form
     {
 
-        //用于调整窗口大小
+        //用于调整窗体大小
         internal enum Direction
         {
             Left,
@@ -27,7 +27,7 @@ namespace Feep
             RightBottom
         }
 
-        //窗口模式
+        //屏幕模式
         internal enum ScreenState
         {
             None,
@@ -109,9 +109,9 @@ namespace Feep
         List<string> filePaths;
         //当前图片
         Bitmap image;
-        //调整窗口大小时的方向
+        //调整窗体大小时的方向
         Direction direction;
-        //当前窗口模式
+        //当前屏幕模式
         internal ScreenState screen;
 
         //是否可以移动窗体
@@ -157,12 +157,14 @@ namespace Feep
         Point HideBeforePosition;
         //阴影的容器，总是全屏而透明的
         static Shadow Shadows;
+        //启动时的窗体状态
+        internal int StartState;
 
         //写配置文件
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
 
-        //窗口动画，防止闪烁
+        //窗体动画，防止闪烁
         [DllImportAttribute("user32.dll")]
         private static extern bool AnimateWindow(IntPtr hwnd, int dwTime, int dwFlags);
 
@@ -190,6 +192,8 @@ namespace Feep
             timerBackColor.Interval = 32;
             timerBackColor.Tick += timerBackColor_Tick;
 
+
+
             Shadows = new Shadow();
 
         }
@@ -200,6 +204,7 @@ namespace Feep
 
             try
             {
+                this.Text = PicturePath;
                 image = new Bitmap(PicturePath);
                 Picture.Image = image;
                 Picture.Width = image.Width;
@@ -210,6 +215,7 @@ namespace Feep
             }
             catch
             {
+                this.Text = "";
                 MessageBox.Show("Can Not Open the Image File：\r" + filePaths[index] + "\r\r\tPlease Check the File's Format !", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 image = new Bitmap(1, 1);
                 filePaths.RemoveAt(index);
@@ -388,23 +394,30 @@ namespace Feep
         private void Exit()
         {
 
-            if (screen != ScreenState.None)
+            if (StartState != 2)
             {
-                WritePrivateProfileString("Location", "X", ScreenBeforeX.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                WritePrivateProfileString("Location", "Y", ScreenBeforeY.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                WritePrivateProfileString("Size", "Width", ScreenBeforeWidth.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                WritePrivateProfileString("Size", "Height", ScreenBeforeHeight.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                WritePrivateProfileString("Screen", "Options", screen.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
+                if (screen != ScreenState.None)
+                {
+
+                    WritePrivateProfileString("Location", "X", ScreenBeforeX.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Location", "Y", ScreenBeforeY.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Size", "Width", ScreenBeforeWidth.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Size", "Height", ScreenBeforeHeight.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Form", "Screen", screen.ToString(), Application.StartupPath + @".\configure.ini");
+                }
+                else
+                {
+
+                    WritePrivateProfileString("Location", "X", this.Location.X.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Location", "Y", this.Location.Y.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Size", "Width", this.Width.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Size", "Height", this.Height.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Form", "Screen", "None", Application.StartupPath + @".\configure.ini");
+                }
             }
-            else
-            {
-                WritePrivateProfileString("Location", "X", this.Location.X.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                WritePrivateProfileString("Location", "Y", this.Location.Y.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                WritePrivateProfileString("Size", "Width", this.Width.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                WritePrivateProfileString("Size", "Height", this.Height.ToString(), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-                WritePrivateProfileString("Screen", "Options", "None", System.Windows.Forms.Application.StartupPath + @".\configure.ini");
-            }
-            WritePrivateProfileString("Screen", "BackColor", System.Drawing.ColorTranslator.ToHtml(this.BackColor), System.Windows.Forms.Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Form", "BackColor", ColorTranslator.ToHtml(this.BackColor), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Form", "StartState", StartState.ToString(), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Form", "ShowInTaskbar", ShowInTaskbar.ToString(), Application.StartupPath + @".\configure.ini");
 
             Shadows.Dispose();
             this.Close();
@@ -563,7 +576,7 @@ namespace Feep
                 if ((image.Width > (this.Width)) || (image.Height > (this.Height)))
                 {
                     Cursor.Tag = false;
-                    int PointX, PointY;//图片相对于窗口容器的坐标
+                    int PointX, PointY;//图片相对于窗体容器的坐标
                     double w = Convert.ToDouble(image.Width) / Convert.ToDouble(this.Width);
                     double h = Convert.ToDouble(image.Height) / Convert.ToDouble(this.Height);
 
@@ -820,7 +833,7 @@ namespace Feep
             #endregion
 
 
-            #region 调整窗口大小
+            #region 调整窗体大小
 
             if (ResizeForm == true)
             {
@@ -1156,7 +1169,7 @@ namespace Feep
                             try
                             {
                                 image.Dispose();
-                                System.IO.File.Delete(filePaths[index]);
+                                File.Delete(filePaths[index]);
                                 filePaths.RemoveAt(index);
                                 if (filePaths.Count < 1)
                                 {
@@ -1169,6 +1182,12 @@ namespace Feep
                             catch
                             {
                             }
+                            break;
+                        }
+                    case Keys.Enter:
+                        {
+                            System.Diagnostics.Process.Start("explorer.exe", @"/select, " + filePaths[index]);
+                            Exit();
                             break;
                         }
                 }

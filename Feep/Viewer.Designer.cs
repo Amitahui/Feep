@@ -59,7 +59,6 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Viewer";
-            this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Load += new System.EventHandler(this.Viewer_Load);
