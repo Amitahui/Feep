@@ -37,7 +37,6 @@ namespace Feep
         //文件排序
         sealed internal class StringLogicalComparer : IComparer<string>
         {
-
             [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
             public static extern int StrCmpLogicalW(string x, string y);
 
@@ -51,7 +50,6 @@ namespace Feep
         //获取文件路径
         sealed internal class FilePath
         {
-
             List<string> paths = new List<string>();
 
             internal List<string> Paths
@@ -126,6 +124,7 @@ namespace Feep
                 }
             }
             base.WndProc(ref m);
+
         }
 
         #endregion
@@ -185,6 +184,7 @@ namespace Feep
             R = Convert.ToByte(r * 255.0f);
             G = Convert.ToByte(g * 255.0f);
             B = Convert.ToByte(b * 255.0f);
+
         }
 
 
@@ -292,7 +292,6 @@ namespace Feep
 
         internal Viewer(string PicturePath)
         {
-
             InitializeComponent();
 
             string folder = PicturePath.Remove(PicturePath.LastIndexOf('\\')) + '\\';
@@ -303,8 +302,6 @@ namespace Feep
             filePaths = filePath.Paths;
             index = filePaths.IndexOf(PicturePath);
 
-            //flag = true;
-
             Picture.MouseDown += new MouseEventHandler(Viewer_MouseDown);
             Picture.MouseUp += new MouseEventHandler(Viewer_MouseUp);
             Picture.MouseMove += new MouseEventHandler(Viewer_MouseMove);
@@ -313,8 +310,6 @@ namespace Feep
             timerBackColor.Interval = 32;
             timerBackColor.Tick += timerBackColor_Tick;
 
-
-
             Shadows = new Shadow();
 
         }
@@ -322,7 +317,6 @@ namespace Feep
 
         internal bool Show(string PicturePath)
         {
-
             try
             {
                 this.Text = PicturePath;
@@ -353,7 +347,6 @@ namespace Feep
 
         private void Next()
         {
-
             if (image != null)
             {
                 image.Dispose();
@@ -369,7 +362,6 @@ namespace Feep
 
         private void Previous()
         {
-
             if (image != null)
             {
                 image.Dispose();
@@ -392,7 +384,6 @@ namespace Feep
 
         private void ChangeSize()
         {
-
             if ((image.Width >= (this.Width)) || (image.Height >= (this.Height)))
             {
                 this.Picture.SizeMode = PictureBoxSizeMode.Zoom;
@@ -410,7 +401,6 @@ namespace Feep
 
         private void ChangeScreenState(bool isKey)
         {
-
             Screen currentScreen = Screen.FromPoint(Control.MousePosition);
 
             switch (screen)
@@ -514,7 +504,6 @@ namespace Feep
 
         private void Exit()
         {
-
             if (StartState != 2)
             {
                 if (screen != ScreenState.None)
@@ -548,7 +537,6 @@ namespace Feep
 
         private void Viewer_Load(object sender, EventArgs e)
         {
-
             if (index != -1)
             {
                 Show(filePaths[index]);
@@ -564,6 +552,25 @@ namespace Feep
 
         private void Viewer_SizeChanged(object sender, EventArgs e)
         {
+            if (IsLoseControl)
+            {
+                IsLoseControl = false;
+                this.Cursor = Cursors.Cross;
+                Cursor.Hide();
+            }
+
+            if (IsLockZoom)
+            {
+                IsLockZoom = false;
+
+                LeftButtonsPress = false;
+
+                IsZoom = false;
+                ChangeSize();
+                Cursor.Show();
+                flag = true;
+            }
+
             if (LeftButtonsPress)
             {
                 LeftButtonsPress = false;
@@ -572,7 +579,6 @@ namespace Feep
                 {
                     IsZoom = false;
                     ChangeSize();
-                    Cursor.Position = HideBeforePosition;
                     Cursor.Show();
                     flag = true;
                 }
@@ -588,7 +594,6 @@ namespace Feep
 
         private void Viewer_MouseDown(object sender, MouseEventArgs e)
         {
-
             if (IsClose == true)
             {
                 return;
@@ -604,7 +609,6 @@ namespace Feep
                         this.Cursor = Cursors.Cross;
                         Cursor.Position = Center;
                         Cursor.Hide();
-
                     }
                     else
                     {
@@ -733,7 +737,6 @@ namespace Feep
 
         private void Viewer_MouseUp(object sender, MouseEventArgs e)
         {
-
             if (IsLockZoom)
             {
                 if (e.Button == MouseButtons.Middle && !IsLoseControl)
@@ -823,7 +826,6 @@ namespace Feep
 
         private void Viewer_MouseMove(object sender, MouseEventArgs e)
         {
-
             Screen currentScreen = Screen.FromPoint(Control.MousePosition);
 
             #region 更改光标样式&图像翻转
