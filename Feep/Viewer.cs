@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.IO;
@@ -105,6 +101,127 @@ namespace Feep
         }
 
 
+        #region 屏蔽原窗体行为
+
+        const int WM_SYSCOMMAND = 0x112;
+        const int SC_CLOSE = 0xF060;
+        const int SC_MINIMIZE = 0xF020;
+        const int SC_MAXIMIZE = 0xF030;
+        const int SC_NOMAL = 0xF120;
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_SYSCOMMAND)
+            {
+                switch (m.WParam.ToInt32())
+                {
+                    case SC_CLOSE:
+                    case SC_MINIMIZE:
+                    case SC_MAXIMIZE:
+                    case SC_NOMAL:
+                        {
+                            Exit();
+                            return;
+                        }
+                }
+            }
+            base.WndProc(ref m);
+        }
+
+        #endregion
+
+
+        #region 缤纷背景色
+
+        bool SaturationDirection = true;
+        float Hue, Saturation, Brightness;
+        Timer timerBackColor = new Timer();
+        Random randomBackColor = new Random(DateTime.Now.Millisecond);
+
+
+        public static void HSI_RGB(float H, float S, float I, out byte R, out byte G, out byte B)
+        {
+            float r = 0, g = 0, b = 0;
+            int i = (int)((H / 60) % 6);
+            float f = (H / 60) - i;
+            float p = I * (1 - S);
+            float q = I * (1 - f * S);
+            float t = I * (1 - (1 - f) * S);
+            switch (i)
+            {
+                case 0:
+                    r = I;
+                    g = t;
+                    b = p;
+                    break;
+                case 1:
+                    r = q;
+                    g = I;
+                    b = p;
+                    break;
+                case 2:
+                    r = p;
+                    g = I;
+                    b = t;
+                    break;
+                case 3:
+                    r = p;
+                    g = q;
+                    b = I;
+                    break;
+                case 4:
+                    r = t;
+                    g = p;
+                    b = I;
+                    break;
+                case 5:
+                    r = I;
+                    g = p;
+                    b = q;
+                    break;
+                default:
+                    break;
+            }
+            R = Convert.ToByte(r * 255.0f);
+            G = Convert.ToByte(g * 255.0f);
+            B = Convert.ToByte(b * 255.0f);
+        }
+
+
+        private void timerBackColor_Tick(object sender, EventArgs e)
+        {
+            Hue = (Hue + 0.17f);
+            Hue = Hue > 360.0f ? Hue - 360.0f : Hue;
+
+            if (SaturationDirection)
+            {
+                Saturation += 0.005f;
+                if (Saturation > 0.79)
+                {
+                    SaturationDirection = false;
+                }
+            }
+            else
+            {
+                Saturation -= 0.005f;
+                if (Saturation < 0.53)
+                {
+                    SaturationDirection = true;
+                }
+            }
+
+            byte R, G, B;
+            HSI_RGB(Hue, Saturation, Brightness, out R, out G, out B);
+
+            this.BackColor = Color.FromArgb(R, G, B);
+            this.Picture.BackColor = this.BackColor;
+
+        }
+
+
+        #endregion
+
+
         //文件路径
         List<string> filePaths;
         //当前图片
@@ -114,6 +231,8 @@ namespace Feep
         //当前屏幕模式
         internal ScreenState screen;
 
+        //光标处于自然状态
+        bool flag = true;
         //是否可以移动窗体
         bool MoveWindow = false;
         //窗体是否移动过了 (用于判断操作是移动窗体还是切换全屏和自然)
@@ -150,6 +269,8 @@ namespace Feep
         Point Center;
         //锁定缩放
         bool IsLockZoom = false;
+        //释放控制
+        bool IsLoseControl = false;
         //记录了右边和下边的位置，用于图像翻转归位
         int? OptimizeLeftPosition;
         int? OptimizeTopPosition;
@@ -182,7 +303,7 @@ namespace Feep
             filePaths = filePath.Paths;
             index = filePaths.IndexOf(PicturePath);
 
-            Cursor.Tag = true;
+            //flag = true;
 
             Picture.MouseDown += new MouseEventHandler(Viewer_MouseDown);
             Picture.MouseUp += new MouseEventHandler(Viewer_MouseUp);
@@ -425,97 +546,6 @@ namespace Feep
         }
 
 
-        #region 缤纷背景色
-
-        bool SaturationDirection = true;
-        float Hue, Saturation, Brightness;
-        Timer timerBackColor = new Timer();
-        Random randomBackColor = new Random(DateTime.Now.Millisecond);
-
-
-        public static void HSI_RGB(float H, float S, float I, out byte R, out byte G, out byte B)
-        {
-            float r = 0, g = 0, b = 0;
-            int i = (int)((H / 60) % 6);
-            float f = (H / 60) - i;
-            float p = I * (1 - S);
-            float q = I * (1 - f * S);
-            float t = I * (1 - (1 - f) * S);
-            switch (i)
-            {
-                case 0:
-                    r = I;
-                    g = t;
-                    b = p;
-                    break;
-                case 1:
-                    r = q;
-                    g = I;
-                    b = p;
-                    break;
-                case 2:
-                    r = p;
-                    g = I;
-                    b = t;
-                    break;
-                case 3:
-                    r = p;
-                    g = q;
-                    b = I;
-                    break;
-                case 4:
-                    r = t;
-                    g = p;
-                    b = I;
-                    break;
-                case 5:
-                    r = I;
-                    g = p;
-                    b = q;
-                    break;
-                default:
-                    break;
-            }
-            R = Convert.ToByte(r * 255.0f);
-            G = Convert.ToByte(g * 255.0f);
-            B = Convert.ToByte(b * 255.0f);
-        }
-
-
-        private void timerBackColor_Tick(object sender, EventArgs e)
-        {
-            Hue = (Hue + 0.17f);
-            Hue = Hue > 360.0f ? Hue - 360.0f : Hue;
-
-            if (SaturationDirection)
-            {
-                Saturation += 0.005f;
-                if (Saturation > 0.79)
-                {
-                    SaturationDirection = false;
-                }
-            }
-            else
-            {
-                Saturation -= 0.005f;
-                if (Saturation < 0.53)
-                {
-                    SaturationDirection = true;
-                }
-            }
-
-            byte R, G, B;
-            HSI_RGB(Hue, Saturation, Brightness, out R, out G, out B);
-
-            this.BackColor = Color.FromArgb(R, G, B);
-            this.Picture.BackColor = this.BackColor;
-
-        }
-
-
-        #endregion
-
-
         private void Viewer_Load(object sender, EventArgs e)
         {
 
@@ -534,6 +564,19 @@ namespace Feep
 
         private void Viewer_SizeChanged(object sender, EventArgs e)
         {
+            if (LeftButtonsPress)
+            {
+                LeftButtonsPress = false;
+
+                if (IsZoom == true)
+                {
+                    IsZoom = false;
+                    ChangeSize();
+                    Cursor.Position = HideBeforePosition;
+                    Cursor.Show();
+                    flag = true;
+                }
+            }
 
             if (image != null)
             {
@@ -553,6 +596,25 @@ namespace Feep
 
             if (IsLockZoom)
             {
+                if (e.Button == MouseButtons.Right)
+                {
+                    if (IsLoseControl)
+                    {
+                        IsLoseControl = false;
+                        this.Cursor = Cursors.Cross;
+                        Cursor.Position = Center;
+                        Cursor.Hide();
+
+                    }
+                    else
+                    {
+                        IsLoseControl = true;
+                        this.Cursor = Cursors.Default;
+                        Cursor.Position = HideBeforePosition;
+                        Cursor.Show();
+                    }
+                }
+
                 return;
             }
 
@@ -575,7 +637,7 @@ namespace Feep
 
                 if ((image.Width > (this.Width)) || (image.Height > (this.Height)))
                 {
-                    Cursor.Tag = false;
+                    flag = false;
                     int PointX, PointY;//图片相对于窗体容器的坐标
                     double w = Convert.ToDouble(image.Width) / Convert.ToDouble(this.Width);
                     double h = Convert.ToDouble(image.Height) / Convert.ToDouble(this.Height);
@@ -674,7 +736,7 @@ namespace Feep
 
             if (IsLockZoom)
             {
-                if (e.Button == MouseButtons.Middle)
+                if (e.Button == MouseButtons.Middle && !IsLoseControl)
                 {
                     IsLockZoom = false;
 
@@ -684,7 +746,7 @@ namespace Feep
                     ChangeSize();
                     Cursor.Position = HideBeforePosition;
                     Cursor.Show();
-                    Cursor.Tag = true;
+                    flag = true;
                 }
 
                 return;
@@ -710,7 +772,7 @@ namespace Feep
                     ChangeSize();
                     Cursor.Position = HideBeforePosition;
                     Cursor.Show();
-                    Cursor.Tag = true;
+                    flag = true;
                 }
             }
             else if (e.Button == MouseButtons.Middle)
@@ -948,7 +1010,7 @@ namespace Feep
 
                 MovedWindow = true;
             }
-            else if ((bool)Cursor.Tag == false)
+            else if ((bool)flag == false && !IsLoseControl)
             {
                 if (Cursor.Position.X == Center.X && Cursor.Position.Y == Center.Y)
                     return;

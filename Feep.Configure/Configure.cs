@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -120,7 +116,7 @@ namespace Feep.Configure
         {
             InitializeComponent();
 
-            System.Text.StringBuilder ReturnedString = new System.Text.StringBuilder(255);
+            StringBuilder ReturnedString = new StringBuilder(255);
 
             GetPrivateProfileString("Location", "X", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.1).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
             Int32.TryParse(ReturnedString.ToString(), out PointX);
