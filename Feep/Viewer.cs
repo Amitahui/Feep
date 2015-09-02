@@ -607,6 +607,7 @@ namespace Feep
                     {
                         IsLoseControl = false;
                         this.Cursor = Cursors.Cross;
+                        HideBeforePosition = Cursor.Position;
                         Cursor.Position = Center;
                         Cursor.Hide();
                     }

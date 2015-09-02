@@ -81,8 +81,18 @@ namespace Feep
                 if (startState == 2)
                 {
                     screen = "None";
-                    PointX = (Screen.PrimaryScreen.Bounds.Width - Width) / 2;
-                    PointY = (Screen.PrimaryScreen.Bounds.Height - Height) / 2;
+
+                    if (Width > Screen.PrimaryScreen.WorkingArea.Width || Height > Screen.PrimaryScreen.WorkingArea.Height)
+                    {
+                        PointX = (Screen.PrimaryScreen.Bounds.Width - Width) / 2;
+                        PointY = (Screen.PrimaryScreen.Bounds.Height - Height) / 2;
+                    }
+                    else
+                    {
+                        PointX = (Screen.PrimaryScreen.WorkingArea.Width - Width) / 2 + Screen.PrimaryScreen.WorkingArea.X;
+                        PointY = (Screen.PrimaryScreen.WorkingArea.Height - Height) / 2 + Screen.PrimaryScreen.WorkingArea.Y;
+                    }
+
                 }
 
                 if (screen != "None")

@@ -188,8 +188,8 @@ namespace Feep.Configure
                     {
                         SizeWidth = (int)numWidth.Value;
                         SizeHeight = (int)numHeight.Value;
-                        PointX = (Screen.PrimaryScreen.Bounds.Width - SizeWidth) / 2;
-                        PointY = (Screen.PrimaryScreen.Bounds.Height - SizeHeight) / 2;
+                        PointX = 0;
+                        PointY = 0;
                     }
                     break;
             }
