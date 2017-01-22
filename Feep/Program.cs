@@ -6,9 +6,6 @@ namespace Feep
 {
     static class Program
     {
-        /// <summary>
-        /// 应用程序的主入口点。
-        /// </summary>
         [STAThread]
         static void Main(String[] args)
         {
@@ -28,21 +25,21 @@ namespace Feep
 
                 bool hasError = false;
 
-                GetPrivateProfileString("Location", "X", "", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Location", "X", "", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
                 hasError = !Int32.TryParse(ReturnedString.ToString(), out PointX);
-                GetPrivateProfileString("Location", "Y", "", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Location", "Y", "", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
                 hasError = !Int32.TryParse(ReturnedString.ToString(), out PointY);
-                GetPrivateProfileString("Size", "Width", "", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Size", "Width", "", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
                 hasError = !Int32.TryParse(ReturnedString.ToString(), out Width);
-                GetPrivateProfileString("Size", "Height", "", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Size", "Height", "", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
                 hasError = !Int32.TryParse(ReturnedString.ToString(), out Height);
-                GetPrivateProfileString("Form", "Screen", "None", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Form", "Screen", "None", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
                 screen = ReturnedString.ToString();
-                GetPrivateProfileString("Form", "BackColor", "#000000", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Form", "BackColor", "#000000", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
                 backColor = ReturnedString.ToString();
-                GetPrivateProfileString("Form", "StartState", "0", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Form", "StartState", "0", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
                 Int32.TryParse(ReturnedString.ToString(), out startState);
-                GetPrivateProfileString("Form", "ShowInTaskbar", "False", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+                GetPrivateProfileString("Form", "ShowInTaskbar", "False", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
                 Boolean.TryParse(ReturnedString.ToString(), out showInTaskbar);
 
                 viewer.StartState = startState;
@@ -71,7 +68,6 @@ namespace Feep
                     viewer.BackColor = System.Drawing.Color.Black;
                     viewer.Picture.BackColor = viewer.BackColor;
                 }
-
 
                 if (startState == 1)
                 {

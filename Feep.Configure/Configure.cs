@@ -118,21 +118,21 @@ namespace Feep.Configure
 
             StringBuilder ReturnedString = new StringBuilder(255);
 
-            GetPrivateProfileString("Location", "X", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.1).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            GetPrivateProfileString("Location", "X", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.1).ToString(), ReturnedString, 255, Application.StartupPath + @"\configure.ini");
             Int32.TryParse(ReturnedString.ToString(), out PointX);
-            GetPrivateProfileString("Location", "Y", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.1).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            GetPrivateProfileString("Location", "Y", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.1).ToString(), ReturnedString, 255, Application.StartupPath + @"\configure.ini");
             Int32.TryParse(ReturnedString.ToString(), out PointY);
-            GetPrivateProfileString("Size", "Width", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.8).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            GetPrivateProfileString("Size", "Width", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width * 0.8).ToString(), ReturnedString, 255, Application.StartupPath + @"\configure.ini");
             Int32.TryParse(ReturnedString.ToString(), out SizeWidth);
-            GetPrivateProfileString("Size", "Height", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.8).ToString(), ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            GetPrivateProfileString("Size", "Height", Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height * 0.8).ToString(), ReturnedString, 255, Application.StartupPath + @"\configure.ini");
             Int32.TryParse(ReturnedString.ToString(), out SizeHeight);
-            GetPrivateProfileString("Form", "Screen", "None", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            GetPrivateProfileString("Form", "Screen", "None", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
             screen = ReturnedString.ToString();
-            GetPrivateProfileString("Form", "BackColor", "#000000", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            GetPrivateProfileString("Form", "BackColor", "#000000", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
             backColor = ReturnedString.ToString();
-            GetPrivateProfileString("Form", "StartState", "0", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            GetPrivateProfileString("Form", "StartState", "0", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
             Int32.TryParse(ReturnedString.ToString(), out startState);
-            GetPrivateProfileString("Form", "ShowInTaskbar", "False", ReturnedString, 255, Application.StartupPath + @".\configure.ini");
+            GetPrivateProfileString("Form", "ShowInTaskbar", "False", ReturnedString, 255, Application.StartupPath + @"\configure.ini");
             Boolean.TryParse(ReturnedString.ToString(), out showInTaskbar);
 
             numWidth.Value = SizeWidth;
@@ -194,14 +194,14 @@ namespace Feep.Configure
                     break;
             }
 
-            WritePrivateProfileString("Location", "X", PointX.ToString(), Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Location", "Y", PointY.ToString(), Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Size", "Width", SizeWidth.ToString(), Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Size", "Height", SizeHeight.ToString(), Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Form", "Screen", "None", Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Form", "BackColor", ColorTranslator.ToHtml(pnlColor.BackColor), Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Form", "StartState", cmbFormStartState.SelectedIndex.ToString(), Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Form", "ShowInTaskbar", chkShowInTaskbar.Checked.ToString(), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Location", "X", PointX.ToString(), Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Location", "Y", PointY.ToString(), Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Size", "Width", SizeWidth.ToString(), Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Size", "Height", SizeHeight.ToString(), Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Form", "Screen", "None", Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Form", "BackColor", ColorTranslator.ToHtml(pnlColor.BackColor), Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Form", "StartState", cmbFormStartState.SelectedIndex.ToString(), Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Form", "ShowInTaskbar", chkShowInTaskbar.Checked.ToString(), Application.StartupPath + @"\configure.ini");
 
             RegisterFileType(".jpg", "Feep JPG File", Application.StartupPath + @"\Icon\JPG.ico", Application.StartupPath + @"\Feep.exe", cbJPG.Checked);
             RegisterFileType(".bmp", "Feep BMP File", Application.StartupPath + @"\Icon\BMP.ico", Application.StartupPath + @"\Feep.exe", cbBMP.Checked);

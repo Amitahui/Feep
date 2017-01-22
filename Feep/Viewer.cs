@@ -98,7 +98,6 @@ namespace Feep
 
         }
 
-
         #region 屏蔽原窗体行为
 
         const int WM_SYSCOMMAND = 0x112;
@@ -129,14 +128,12 @@ namespace Feep
 
         #endregion
 
-
         #region 缤纷背景色
 
         bool SaturationDirection = true;
         float Hue, Saturation, Brightness;
         Timer timerBackColor = new Timer();
         Random randomBackColor = new Random(DateTime.Now.Millisecond);
-
 
         public static void HSI_RGB(float H, float S, float I, out byte R, out byte G, out byte B)
         {
@@ -187,7 +184,6 @@ namespace Feep
 
         }
 
-
         private void timerBackColor_Tick(object sender, EventArgs e)
         {
             Hue = (Hue + 0.17f);
@@ -218,9 +214,7 @@ namespace Feep
 
         }
 
-
         #endregion
-
 
         //文件路径
         List<string> filePaths;
@@ -289,7 +283,6 @@ namespace Feep
         [DllImportAttribute("user32.dll")]
         private static extern bool AnimateWindow(IntPtr hwnd, int dwTime, int dwFlags);
 
-
         internal Viewer(string PicturePath)
         {
             InitializeComponent();
@@ -314,7 +307,6 @@ namespace Feep
 
         }
 
-
         internal bool Show(string PicturePath)
         {
             try
@@ -331,7 +323,6 @@ namespace Feep
             catch
             {
                 this.Text = "";
-                MessageBox.Show("Can Not Open the Image File：\r" + filePaths[index] + "\r\r\tPlease Check the File's Format !", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 image = new Bitmap(1, 1);
                 filePaths.RemoveAt(index);
                 if (filePaths.Count == 0)
@@ -343,7 +334,6 @@ namespace Feep
             }
 
         }
-
 
         private void Next()
         {
@@ -358,7 +348,6 @@ namespace Feep
             }
 
         }
-
 
         private void Previous()
         {
@@ -381,7 +370,6 @@ namespace Feep
 
         }
 
-
         private void ChangeSize()
         {
             if ((image.Width >= (this.Width)) || (image.Height >= (this.Height)))
@@ -397,7 +385,6 @@ namespace Feep
             }
 
         }
-
 
         private void ChangeScreenState(bool isKey)
         {
@@ -501,7 +488,6 @@ namespace Feep
 
         }
 
-
         private void Exit()
         {
             if (StartState != 2)
@@ -509,31 +495,30 @@ namespace Feep
                 if (screen != ScreenState.None)
                 {
 
-                    WritePrivateProfileString("Location", "X", ScreenBeforeX.ToString(), Application.StartupPath + @".\configure.ini");
-                    WritePrivateProfileString("Location", "Y", ScreenBeforeY.ToString(), Application.StartupPath + @".\configure.ini");
-                    WritePrivateProfileString("Size", "Width", ScreenBeforeWidth.ToString(), Application.StartupPath + @".\configure.ini");
-                    WritePrivateProfileString("Size", "Height", ScreenBeforeHeight.ToString(), Application.StartupPath + @".\configure.ini");
-                    WritePrivateProfileString("Form", "Screen", screen.ToString(), Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Location", "X", ScreenBeforeX.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Location", "Y", ScreenBeforeY.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Size", "Width", ScreenBeforeWidth.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Size", "Height", ScreenBeforeHeight.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Form", "Screen", screen.ToString(), Application.StartupPath + @"\configure.ini");
                 }
                 else
                 {
 
-                    WritePrivateProfileString("Location", "X", this.Location.X.ToString(), Application.StartupPath + @".\configure.ini");
-                    WritePrivateProfileString("Location", "Y", this.Location.Y.ToString(), Application.StartupPath + @".\configure.ini");
-                    WritePrivateProfileString("Size", "Width", this.Width.ToString(), Application.StartupPath + @".\configure.ini");
-                    WritePrivateProfileString("Size", "Height", this.Height.ToString(), Application.StartupPath + @".\configure.ini");
-                    WritePrivateProfileString("Form", "Screen", "None", Application.StartupPath + @".\configure.ini");
+                    WritePrivateProfileString("Location", "X", this.Location.X.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Location", "Y", this.Location.Y.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Size", "Width", this.Width.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Size", "Height", this.Height.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Form", "Screen", "None", Application.StartupPath + @"\configure.ini");
                 }
             }
-            WritePrivateProfileString("Form", "BackColor", ColorTranslator.ToHtml(this.BackColor), Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Form", "StartState", StartState.ToString(), Application.StartupPath + @".\configure.ini");
-            WritePrivateProfileString("Form", "ShowInTaskbar", ShowInTaskbar.ToString(), Application.StartupPath + @".\configure.ini");
+            WritePrivateProfileString("Form", "BackColor", ColorTranslator.ToHtml(this.BackColor), Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Form", "StartState", StartState.ToString(), Application.StartupPath + @"\configure.ini");
+            WritePrivateProfileString("Form", "ShowInTaskbar", ShowInTaskbar.ToString(), Application.StartupPath + @"\configure.ini");
 
             Shadows.Dispose();
             this.Close();
 
         }
-
 
         private void Viewer_Load(object sender, EventArgs e)
         {
@@ -548,7 +533,6 @@ namespace Feep
             }
 
         }
-
 
         private void Viewer_SizeChanged(object sender, EventArgs e)
         {
@@ -590,7 +574,6 @@ namespace Feep
             }
 
         }
-
 
         private void Viewer_MouseDown(object sender, MouseEventArgs e)
         {
@@ -703,7 +686,6 @@ namespace Feep
 
                     Rectangle visualRect = Rectangle.Intersect(Cursor.Clip, this.DesktopBounds);
 
-
                     Center = new Point(visualRect.X + visualRect.Width / 2, visualRect.Y + visualRect.Height / 2);
                     Cursor.Position = new Point(Center.X, Center.Y);
 
@@ -734,7 +716,6 @@ namespace Feep
             }
 
         }
-
 
         private void Viewer_MouseUp(object sender, MouseEventArgs e)
         {
@@ -768,7 +749,6 @@ namespace Feep
             if (e.Button == MouseButtons.Left)
             {
                 LeftButtonsPress = false;
-
 
                 if (IsZoom == true)
                 {
@@ -823,7 +803,6 @@ namespace Feep
             }
 
         }
-
 
         private void Viewer_MouseMove(object sender, MouseEventArgs e)
         {
@@ -897,7 +876,6 @@ namespace Feep
 
             #endregion
 
-
             #region 调整窗体大小
 
             if (ResizeForm == true)
@@ -954,7 +932,6 @@ namespace Feep
 
             #endregion
 
-
             if (MoveWindow == true)
             {
 
@@ -990,7 +967,6 @@ namespace Feep
                 }
 
                 #endregion
-
 
                 if (screen != ScreenState.Full)
                 {
@@ -1079,7 +1055,6 @@ namespace Feep
 
         }
 
-
         private void Viewer_MouseWheel(object sender, MouseEventArgs e)
         {
             if (IsLockZoom)
@@ -1130,7 +1105,6 @@ namespace Feep
 
             }
         }
-
 
         private void Viewer_KeyUp(object sender, KeyEventArgs e)
         {
@@ -1259,7 +1233,6 @@ namespace Feep
             }
 
         }
-
 
     }
 }
