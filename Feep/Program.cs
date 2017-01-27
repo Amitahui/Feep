@@ -9,6 +9,7 @@ namespace Feep
         [STAThread]
         static void Main(String[] args)
         {
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Viewer viewer;
@@ -43,10 +44,10 @@ namespace Feep
                 Boolean.TryParse(ReturnedString.ToString(), out showInTaskbar);
 
                 viewer.StartState = startState;
+                viewer.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
                 if (showInTaskbar)
                 {
-                    viewer.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
                     viewer.ShowInTaskbar = true;
                 }
 
@@ -106,28 +107,28 @@ namespace Feep
                         switch (screen)
                         {
                             case "Left":
-                                viewer.screen = Feep.Viewer.ScreenState.Left;
+                                viewer.screenState = Feep.Viewer.ScreenState.Left;
                                 viewer.Location = currentScreen.WorkingArea.Location;
                                 viewer.Width = currentScreen.WorkingArea.Width / 2;
                                 viewer.Height = currentScreen.WorkingArea.Height;
                                 viewer.AtBorderline = true;
                                 break;
                             case "Right":
-                                viewer.screen = Feep.Viewer.ScreenState.Right;
+                                viewer.screenState = Feep.Viewer.ScreenState.Right;
                                 viewer.Location = new System.Drawing.Point(currentScreen.WorkingArea.Width / 2, currentScreen.WorkingArea.Location.Y);
                                 viewer.Width = currentScreen.WorkingArea.Width / 2;
                                 viewer.Height = currentScreen.WorkingArea.Height;
                                 viewer.AtBorderline = true;
                                 break;
                             case "Top":
-                                viewer.screen = Feep.Viewer.ScreenState.Top;
+                                viewer.screenState = Feep.Viewer.ScreenState.Top;
                                 viewer.Location = currentScreen.WorkingArea.Location;
                                 viewer.Width = currentScreen.WorkingArea.Width;
                                 viewer.Height = currentScreen.WorkingArea.Height / 2;
                                 viewer.AtBorderline = true;
                                 break;
                             case "Bottom":
-                                viewer.screen = Feep.Viewer.ScreenState.Bottom;
+                                viewer.screenState = Feep.Viewer.ScreenState.Bottom;
                                 viewer.Location = new System.Drawing.Point(currentScreen.WorkingArea.Location.X, currentScreen.WorkingArea.Height / 2);
                                 viewer.Width = currentScreen.WorkingArea.Width;
                                 viewer.Height = currentScreen.WorkingArea.Height / 2;
@@ -137,7 +138,7 @@ namespace Feep
                     }
                     else
                     {
-                        viewer.screen = Feep.Viewer.ScreenState.Full;
+                        viewer.screenState = Feep.Viewer.ScreenState.Full;
                         viewer.Location = currentScreen.Bounds.Location;
                         viewer.Width = currentScreen.Bounds.Width;
                         viewer.Height = currentScreen.Bounds.Height;
@@ -145,7 +146,7 @@ namespace Feep
                 }
                 else
                 {
-                    viewer.screen = Feep.Viewer.ScreenState.None;
+                    viewer.screenState = Feep.Viewer.ScreenState.None;
                     viewer.Location = new System.Drawing.Point(PointX, PointY);
                     viewer.Width = Width;
                     viewer.Height = Height;

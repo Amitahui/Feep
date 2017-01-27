@@ -4,13 +4,13 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Threading;
 
 namespace Feep
 {
     sealed internal partial class Viewer : Form
     {
 
-        //用于调整窗体大小
         internal enum Direction
         {
             Left,
@@ -23,7 +23,6 @@ namespace Feep
             RightBottom
         }
 
-        //屏幕模式
         internal enum ScreenState
         {
             None,
@@ -34,7 +33,6 @@ namespace Feep
             Bottom
         }
 
-        //文件排序
         sealed internal class StringLogicalComparer : IComparer<string>
         {
             [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
@@ -47,7 +45,6 @@ namespace Feep
 
         }
 
-        //获取文件路径
         sealed internal class FilePath
         {
             List<string> paths = new List<string>();
@@ -84,9 +81,9 @@ namespace Feep
 
                 foreach (string extension in extensions)
                 {
-                    foreach (FileInfo f in dir.GetFiles("*." + extension + ""))
+                    foreach (FileInfo file in dir.GetFiles("*." + extension + ""))
                     {
-                        string temp = dir.FullName + f.ToString();
+                        string temp = dir.FullName + file.ToString();
                         if (!paths.Contains(temp))
                         {
                             paths.Add(temp);
@@ -128,128 +125,39 @@ namespace Feep
 
         #endregion
 
-        #region 缤纷背景色
-
-        bool SaturationDirection = true;
-        float Hue, Saturation, Brightness;
-        Timer timerBackColor = new Timer();
-        Random randomBackColor = new Random(DateTime.Now.Millisecond);
-
-        public static void HSI_RGB(float H, float S, float I, out byte R, out byte G, out byte B)
-        {
-            float r = 0, g = 0, b = 0;
-            int i = (int)((H / 60) % 6);
-            float f = (H / 60) - i;
-            float p = I * (1 - S);
-            float q = I * (1 - f * S);
-            float t = I * (1 - (1 - f) * S);
-            switch (i)
-            {
-                case 0:
-                    r = I;
-                    g = t;
-                    b = p;
-                    break;
-                case 1:
-                    r = q;
-                    g = I;
-                    b = p;
-                    break;
-                case 2:
-                    r = p;
-                    g = I;
-                    b = t;
-                    break;
-                case 3:
-                    r = p;
-                    g = q;
-                    b = I;
-                    break;
-                case 4:
-                    r = t;
-                    g = p;
-                    b = I;
-                    break;
-                case 5:
-                    r = I;
-                    g = p;
-                    b = q;
-                    break;
-                default:
-                    break;
-            }
-            R = Convert.ToByte(r * 255.0f);
-            G = Convert.ToByte(g * 255.0f);
-            B = Convert.ToByte(b * 255.0f);
-
-        }
-
-        private void timerBackColor_Tick(object sender, EventArgs e)
-        {
-            Hue = (Hue + 0.17f);
-            Hue = Hue > 360.0f ? Hue - 360.0f : Hue;
-
-            if (SaturationDirection)
-            {
-                Saturation += 0.005f;
-                if (Saturation > 0.79)
-                {
-                    SaturationDirection = false;
-                }
-            }
-            else
-            {
-                Saturation -= 0.005f;
-                if (Saturation < 0.53)
-                {
-                    SaturationDirection = true;
-                }
-            }
-
-            byte R, G, B;
-            HSI_RGB(Hue, Saturation, Brightness, out R, out G, out B);
-
-            this.BackColor = Color.FromArgb(R, G, B);
-            this.Picture.BackColor = this.BackColor;
-
-        }
-
-        #endregion
-
         //文件路径
         List<string> filePaths;
-        //当前图片
+        //图片
         Bitmap image;
+        //缓存
+        Bitmap cache;
         //调整窗体大小时的方向
         Direction direction;
-        //当前屏幕模式
-        internal ScreenState screen;
-
-        //光标处于自然状态
-        bool flag = true;
+        //屏幕模式
+        internal ScreenState screenState;
+        //光标状态
+        bool cursorState = true;
         //是否可以移动窗体
         bool MoveWindow = false;
-        //窗体是否移动过了 (用于判断操作是移动窗体还是切换全屏和自然)
+        //窗体是否移动过了
         bool MovedWindow = false;
-        //是否可以调整窗体大小 (翻转也需要用到，原因是翻转的同时也在调整窗体大小)
+        //是否可以调整窗体大小
         bool ResizeForm = false;
-        //右键是否按下了，用于旋转图像，删除图片
+        //右键是否按下了
         bool RightButtonsPress = false;
         //左键是否按下了
         bool LeftButtonsPress = false;
-        //是否旋转了图像，如果没有旋转的情况下松开了右键时是退出
+        //是否为旋转图片的操作
         bool IsRotation = false;
-        //是否是删除图片的操作
-        bool IsCustomer = false;
-        //是否是缩放图片
+        //是否为缩放图片的操作
         bool IsZoom = false;
-        //是否需要关闭
+        //是否为退出程序的操作
         bool IsClose = false;
         //是否处于半屏模式状态
         internal bool AtBorderline = false;
-        //记录当前图片所在文件夹的索引
-        int index;
-        //记录移动时光标相对应窗体的位置
+        //当前图片所在文件夹中的索引
+        int Index;
+        //移动时光标相对窗体的位置
         int MoveX;
         int MoveY;
         //切换到全屏和半屏模式之前窗体的位置和尺寸
@@ -257,7 +165,7 @@ namespace Feep
         internal int ScreenBeforeY;
         internal int ScreenBeforeWidth;
         internal int ScreenBeforeHeight;
-        //原始大小时，图片的坐标位置
+        //查看原始比例时图片的坐标位置
         static int DistanceX, DistanceY;
         //缩放时屏幕中央的位置
         Point Center;
@@ -265,21 +173,19 @@ namespace Feep
         bool IsLockZoom = false;
         //释放控制
         bool IsLoseControl = false;
-        //记录了右边和下边的位置，用于图像翻转归位
+        //右边和下边的位置
         int? OptimizeLeftPosition;
         int? OptimizeTopPosition;
-        //查看原始比例时候隐藏光标之前的位置，记录它是因为回到适合窗体比例的时候光标要回到隐藏前的位置
+        //查看原始比例时隐藏光标之前的位置
         Point HideBeforePosition;
-        //阴影的容器，总是全屏而透明的
+        //阴影的容器
         static Shadow Shadows;
         //启动时的窗体状态
         internal int StartState;
 
-        //写配置文件
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
 
-        //窗体动画，防止闪烁
         [DllImportAttribute("user32.dll")]
         private static extern bool AnimateWindow(IntPtr hwnd, int dwTime, int dwFlags);
 
@@ -293,91 +199,112 @@ namespace Feep
             filePath.GetPaths(folder);
             filePath.Paths.Sort(new StringLogicalComparer());
             filePaths = filePath.Paths;
-            index = filePaths.IndexOf(PicturePath);
+            Index = filePaths.IndexOf(PicturePath);
 
             Picture.MouseDown += new MouseEventHandler(Viewer_MouseDown);
             Picture.MouseUp += new MouseEventHandler(Viewer_MouseUp);
             Picture.MouseMove += new MouseEventHandler(Viewer_MouseMove);
             this.MouseWheel += Viewer_MouseWheel;
 
-            timerBackColor.Interval = 32;
-            timerBackColor.Tick += timerBackColor_Tick;
-
             Shadows = new Shadow();
 
         }
 
-        internal bool Show(string PicturePath)
+        internal void ShowPicture(int index, bool orientation)
         {
             try
             {
+                string PicturePath = filePaths[index];
                 this.Text = PicturePath;
-                image = new Bitmap(PicturePath);
-                Picture.Image = image;
-                Picture.Width = image.Width;
-                Picture.Height = image.Height;
+
+                if (cache != null && PicturePath == cache.Tag.ToString())
+                {
+                    image.Dispose();
+                    Picture.Image = cache;
+                    Picture.Width = cache.Width;
+                    Picture.Height = cache.Height;
+                }
+                else
+                {
+                    if (cache != null)
+                    {
+                        cache.Dispose();
+                    }
+                    image = new Bitmap(PicturePath);
+                    Picture.Image = image;
+                    Picture.Width = image.Width;
+                    Picture.Height = image.Height;
+                }
+
                 ChangeSize();
                 Picture.Show();
-                return true;
+                Index = index;
             }
             catch
             {
-                this.Text = "";
-                image = new Bitmap(1, 1);
+                if (orientation)
+                {
+                    ShowPicture(NextFilePath(index), orientation);
+                }
+                else
+                {
+                    ShowPicture(PreviousFilePath(index), orientation);
+                }
+
                 filePaths.RemoveAt(index);
+
                 if (filePaths.Count == 0)
                 {
                     this.Dispose();
                     Application.Exit();
                 }
-                return false;
             }
+
+            new Thread(action =>
+            {
+                BuildCache(orientation);
+            }).Start();
 
         }
 
-        private void Next()
+        private int PreviousFilePath(int index)
         {
-            if (image != null)
-            {
-                image.Dispose();
-            }
+            return index > 0 ? index - 1 : filePaths.Count - 1;
+        }
 
-            if (Show(index > 0 ? filePaths[--index] : filePaths[index = (filePaths.Count - 1)]) && (index == filePaths.Count - 1))
+        private int NextFilePath(int index)
+        {
+            return index < filePaths.Count - 1 ? index + 1 : 0;
+        }
+
+        private void PreviousPicture()
+        {
+            Picture.Image.Dispose();
+            ShowPicture(PreviousFilePath(Index), false);
+            if ((Index == filePaths.Count - 1))
             {
                 System.Media.SystemSounds.Asterisk.Play();
             }
-
         }
 
-        private void Previous()
+        private void NextPicture()
         {
-            if (image != null)
+            Picture.Image.Dispose();
+            ShowPicture(NextFilePath(Index), true);
+            if (Index == 0)
             {
-                image.Dispose();
+                System.Media.SystemSounds.Beep.Play();
             }
-
-            if (Show(index < filePaths.Count - 1 ? filePaths[++index] : filePaths[index = 0]))
-            {
-                if (index == 0)
-                {
-                    System.Media.SystemSounds.Beep.Play();
-                }
-            }
-            else
-            {
-                index--;
-            }
-
         }
 
         private void ChangeSize()
         {
-            if ((image.Width >= (this.Width)) || (image.Height >= (this.Height)))
+            if ((Picture.Image.Width >= (this.Width)) || (Picture.Image.Height >= (this.Height)))
             {
                 this.Picture.SizeMode = PictureBoxSizeMode.Zoom;
                 this.Picture.Dock = DockStyle.Fill;
             }
-            else if ((image.Width < (this.Width)) && (image.Height < (this.Height)))
+            else if ((Picture.Image.Width < (this.Width)) && (Picture.Image.Height < (this.Height)))
             {
                 this.Picture.Dock = DockStyle.None;
                 this.Picture.SizeMode = PictureBoxSizeMode.Normal;
@@ -390,12 +317,12 @@ namespace Feep
         {
             Screen currentScreen = Screen.FromPoint(Control.MousePosition);
 
-            switch (screen)
+            switch (screenState)
             {
                 case ScreenState.None:
                     if (MovedWindow == false)
                     {
-                        screen = ScreenState.Full;
+                        screenState = ScreenState.Full;
                         this.TopMost = true;
                         ScreenBeforeX = this.Location.X;
                         ScreenBeforeY = this.Location.Y;
@@ -411,7 +338,7 @@ namespace Feep
                 case ScreenState.Full:
                     if (MovedWindow == false)
                     {
-                        screen = ScreenState.None;
+                        screenState = ScreenState.None;
                         this.TopMost = false;
                         AnimateWindow(this.Handle, 40, 0x00000010 + 0x00080000 + 0x00010000);
                         this.Location = new Point(ScreenBeforeX, ScreenBeforeY);
@@ -488,18 +415,69 @@ namespace Feep
 
         }
 
+        private void BuildCache(bool orientation)
+        {
+            int index = Index;
+
+            try
+            {
+                if (orientation)
+                {
+                    index = NextFilePath(index);
+                }
+                else
+                {
+                    index = PreviousFilePath(index);
+                }
+
+                cache = new Bitmap(filePaths[index]);
+                cache.Tag = filePaths[index];
+            }
+            catch
+            {
+                filePaths.RemoveAt(index);
+                BuildCache(orientation);
+            }
+        }
+
+        private void DeleteFile(string filePath, bool sendToRecycleBin)
+        {
+            new Thread(action =>
+            {
+                while (File.Exists(filePath))
+                {
+                    try
+                    {
+                        if (sendToRecycleBin)
+                        {
+                            Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(filePath, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                        }
+                        else
+                        {
+                            File.Delete(filePath);
+                        }
+                    }
+                    catch
+                    {
+                        Thread.Sleep(100);
+                    }
+                }
+                Thread.CurrentThread.Abort();
+            }).Start();
+        }
+
         private void Exit()
         {
             if (StartState != 2)
             {
-                if (screen != ScreenState.None)
+                if (screenState != ScreenState.None)
                 {
 
                     WritePrivateProfileString("Location", "X", ScreenBeforeX.ToString(), Application.StartupPath + @"\configure.ini");
                     WritePrivateProfileString("Location", "Y", ScreenBeforeY.ToString(), Application.StartupPath + @"\configure.ini");
                     WritePrivateProfileString("Size", "Width", ScreenBeforeWidth.ToString(), Application.StartupPath + @"\configure.ini");
                     WritePrivateProfileString("Size", "Height", ScreenBeforeHeight.ToString(), Application.StartupPath + @"\configure.ini");
-                    WritePrivateProfileString("Form", "Screen", screen.ToString(), Application.StartupPath + @"\configure.ini");
+                    WritePrivateProfileString("Form", "Screen", screenState.ToString(), Application.StartupPath + @"\configure.ini");
                 }
                 else
                 {
@@ -522,9 +500,9 @@ namespace Feep
 
         private void Viewer_Load(object sender, EventArgs e)
         {
-            if (index != -1)
+            if (Index != -1)
             {
-                Show(filePaths[index]);
+                ShowPicture(Index, true);
             }
             else
             {
@@ -552,7 +530,7 @@ namespace Feep
                 IsZoom = false;
                 ChangeSize();
                 Cursor.Show();
-                flag = true;
+                cursorState = true;
             }
 
             if (LeftButtonsPress)
@@ -564,11 +542,11 @@ namespace Feep
                     IsZoom = false;
                     ChangeSize();
                     Cursor.Show();
-                    flag = true;
+                    cursorState = true;
                 }
             }
 
-            if (image != null)
+            if (Picture.Image != null)
             {
                 ChangeSize();
             }
@@ -613,7 +591,7 @@ namespace Feep
             {
                 LeftButtonsPress = true;
 
-                if (((mouseX < 5) || ((this.Location.X + this.Width) - Control.MousePosition.X < 5) || (mouseY < 5) || ((this.Location.Y + this.Height) - Control.MousePosition.Y < 5)) && screen != ScreenState.Full)
+                if (((mouseX < 5) || ((this.Location.X + this.Width) - Control.MousePosition.X < 5) || (mouseY < 5) || ((this.Location.Y + this.Height) - Control.MousePosition.Y < 5)) && screenState != ScreenState.Full)
                 {
                     ResizeForm = true;
                     return;
@@ -623,21 +601,21 @@ namespace Feep
                 HideBeforePosition = Cursor.Position;
                 Cursor.Hide();
 
-                if ((image.Width > (this.Width)) || (image.Height > (this.Height)))
+                if ((Picture.Image.Width > (this.Width)) || (Picture.Image.Height > (this.Height)))
                 {
-                    flag = false;
-                    int PointX, PointY;//图片相对于窗体容器的坐标
-                    double w = Convert.ToDouble(image.Width) / Convert.ToDouble(this.Width);
-                    double h = Convert.ToDouble(image.Height) / Convert.ToDouble(this.Height);
+                    cursorState = false;
+                    int PointX, PointY;
+                    double w = Convert.ToDouble(Picture.Image.Width) / Convert.ToDouble(this.Width);
+                    double h = Convert.ToDouble(Picture.Image.Height) / Convert.ToDouble(this.Height);
 
-                    if (w > h)//横向缩放比例比较大，横向缩放比例为图片缩放比例
+                    if (w > h)
                     {
                         PointX = Convert.ToInt32(mouseX * w);
-                        PointY = Convert.ToInt32((mouseY - ((this.Height - (image.Height / w)) / 2)) * w);
+                        PointY = Convert.ToInt32((mouseY - ((this.Height - (Picture.Image.Height / w)) / 2)) * w);
                     }
-                    else if (w < h)//纵向缩放比例比较大，纵向缩放比例为图片缩放比例
+                    else if (w < h)
                     {
-                        PointX = Convert.ToInt32((mouseX - ((this.Width - (image.Width / h)) / 2)) * h);
+                        PointX = Convert.ToInt32((mouseX - ((this.Width - (Picture.Image.Width / h)) / 2)) * h);
                         PointY = Convert.ToInt32(mouseY * h);
                     }
                     else
@@ -646,7 +624,6 @@ namespace Feep
                         PointY = Convert.ToInt32(mouseY * h);
                     }
 
-                    //先将在原始比例下光标所指的位置移到(0,0)点，再移到一个合适的位置
                     PointX = (5 * mouseX + this.Width) / 7 - PointX;
                     PointY = (5 * mouseY + this.Height) / 7 - PointY;
 
@@ -654,34 +631,34 @@ namespace Feep
                     {
                         PointX = 0;
                     }
-                    else if (PointX < this.Width - image.Width)
+                    else if (PointX < this.Width - Picture.Image.Width)
                     {
-                        PointX = this.Width - image.Width;
+                        PointX = this.Width - Picture.Image.Width;
                     }
 
                     if (PointY > 0)
                     {
                         PointY = 0;
                     }
-                    else if (PointY < this.Height - image.Height)
+                    else if (PointY < this.Height - Picture.Image.Height)
                     {
-                        PointY = this.Height - image.Height;
+                        PointY = this.Height - Picture.Image.Height;
                     }
 
-                    if (image.Width < this.Width)
+                    if (Picture.Image.Width < this.Width)
                     {
-                        PointX = (this.Width - image.Width) / 2;
+                        PointX = (this.Width - Picture.Image.Width) / 2;
                     }
 
-                    if (image.Height < this.Height)
+                    if (Picture.Image.Height < this.Height)
                     {
-                        PointY = (this.Height - image.Height) / 2;
+                        PointY = (this.Height - Picture.Image.Height) / 2;
                     }
 
                     this.Picture.SizeMode = PictureBoxSizeMode.Normal;
                     this.Picture.Dock = DockStyle.None;
-                    Picture.Width = image.Width;
-                    Picture.Height = image.Height;
+                    Picture.Width = Picture.Image.Width;
+                    Picture.Height = Picture.Image.Height;
                     Picture.Location = new Point(PointX, PointY);
 
                     Rectangle visualRect = Rectangle.Intersect(Cursor.Clip, this.DesktopBounds);
@@ -697,12 +674,6 @@ namespace Feep
             {
                 if (LeftButtonsPress)
                 {
-                    return;
-                }
-
-                if (RightButtonsPress)
-                {
-                    IsCustomer = true;
                     return;
                 }
 
@@ -731,7 +702,7 @@ namespace Feep
                     ChangeSize();
                     Cursor.Position = HideBeforePosition;
                     Cursor.Show();
-                    flag = true;
+                    cursorState = true;
                 }
 
                 return;
@@ -756,7 +727,7 @@ namespace Feep
                     ChangeSize();
                     Cursor.Position = HideBeforePosition;
                     Cursor.Show();
-                    flag = true;
+                    cursorState = true;
                 }
             }
             else if (e.Button == MouseButtons.Middle)
@@ -764,18 +735,6 @@ namespace Feep
                 if (LeftButtonsPress)
                 {
                     IsLockZoom = true;
-                    return;
-                }
-
-                if (IsCustomer == true)
-                {
-                    Hue = randomBackColor.Next(0, 360);
-                    Saturation = randomBackColor.Next(53, 79) / 100f;
-                    Brightness = randomBackColor.Next(43, 53) / 100f;
-                    byte R, G, B;
-                    HSI_RGB(Hue, Saturation, Brightness, out R, out G, out B);
-                    this.BackColor = Color.FromArgb(R, G, B);
-                    this.Picture.BackColor = this.BackColor;
                     return;
                 }
 
@@ -792,10 +751,6 @@ namespace Feep
                 {
                     IsRotation = false;
                 }
-                else if (IsCustomer == true)
-                {
-                    IsCustomer = false;
-                }
                 else
                 {
                     Exit();
@@ -810,65 +765,65 @@ namespace Feep
 
             #region 更改光标样式&图像翻转
 
-            if (screen != ScreenState.Full && (Control.MousePosition.X - this.Location.X < 5))
+            if (screenState != ScreenState.Full && (Control.MousePosition.X - this.Location.X < 5))
             {
                 if (ResizeForm == true && direction == Direction.Right)
                 {
-                    image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    Picture.Image.RotateFlip(RotateFlipType.RotateNoneFlipX);
                 }
                 Cursor.Current = Cursors.SizeWE;
                 direction = Direction.Left;
             }
 
-            if (screen != ScreenState.Full && ((this.Location.X + this.Width) - Control.MousePosition.X < 5))
+            if (screenState != ScreenState.Full && ((this.Location.X + this.Width) - Control.MousePosition.X < 5))
             {
                 if (ResizeForm == true && direction == Direction.Left)
                 {
-                    image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    Picture.Image.RotateFlip(RotateFlipType.RotateNoneFlipX);
                 }
                 Cursor.Current = Cursors.SizeWE;
                 direction = Direction.Right;
             }
 
-            if (screen != ScreenState.Full && (Control.MousePosition.Y - this.Location.Y < 5))
+            if (screenState != ScreenState.Full && (Control.MousePosition.Y - this.Location.Y < 5))
             {
                 if (ResizeForm == true && direction == Direction.Bottom)
                 {
-                    image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    Picture.Image.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 }
                 Cursor.Current = Cursors.SizeNS;
                 direction = Direction.Top;
             }
 
-            if (screen != ScreenState.Full && ((this.Location.Y + this.Height) - Control.MousePosition.Y < 5))
+            if (screenState != ScreenState.Full && ((this.Location.Y + this.Height) - Control.MousePosition.Y < 5))
             {
                 if (ResizeForm == true && direction == Direction.Top)
                 {
-                    image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    Picture.Image.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 }
                 Cursor.Current = Cursors.SizeNS;
                 direction = Direction.Bottom;
             }
 
-            if (screen != ScreenState.Full && ((Control.MousePosition.X - this.Location.X < 10) && (Control.MousePosition.Y - this.Location.Y < 10)))
+            if (screenState != ScreenState.Full && ((Control.MousePosition.X - this.Location.X < 10) && (Control.MousePosition.Y - this.Location.Y < 10)))
             {
                 Cursor.Current = Cursors.SizeNWSE;
                 direction = Direction.LeftTop;
             }
 
-            if (screen != ScreenState.Full && ((Control.MousePosition.X - this.Location.X < 10) && ((this.Location.Y + this.Height) - Control.MousePosition.Y < 10)))
+            if (screenState != ScreenState.Full && ((Control.MousePosition.X - this.Location.X < 10) && ((this.Location.Y + this.Height) - Control.MousePosition.Y < 10)))
             {
                 Cursor.Current = Cursors.SizeNESW;
                 direction = Direction.LeftBottom;
             }
 
-            if (screen != ScreenState.Full && (((this.Location.X + this.Width) - Control.MousePosition.X < 10) && (Control.MousePosition.Y - this.Location.Y < 10)))
+            if (screenState != ScreenState.Full && (((this.Location.X + this.Width) - Control.MousePosition.X < 10) && (Control.MousePosition.Y - this.Location.Y < 10)))
             {
                 Cursor.Current = Cursors.SizeNESW;
                 direction = Direction.RightTop;
             }
 
-            if (screen != ScreenState.Full && (((this.Location.X + this.Width) - Control.MousePosition.X < 10) && ((this.Location.Y + this.Height) - Control.MousePosition.Y < 10)))
+            if (screenState != ScreenState.Full && (((this.Location.X + this.Width) - Control.MousePosition.X < 10) && ((this.Location.Y + this.Height) - Control.MousePosition.Y < 10)))
             {
                 Cursor.Current = Cursors.SizeNWSE;
                 direction = Direction.RightBottom;
@@ -939,40 +894,40 @@ namespace Feep
 
                 if (Control.MousePosition.X < currentScreen.Bounds.Left + 2)
                 {
-                    screen = ScreenState.Left;
+                    screenState = ScreenState.Left;
                     Shadows.FillShadow(new Rectangle(currentScreen.WorkingArea.X, currentScreen.WorkingArea.Y, currentScreen.WorkingArea.Width / 2, currentScreen.WorkingArea.Height));
                 }
                 else if (Control.MousePosition.X > currentScreen.Bounds.Right - 2)
                 {
-                    screen = ScreenState.Right;
+                    screenState = ScreenState.Right;
                     Shadows.FillShadow(new Rectangle(currentScreen.WorkingArea.Width / 2 + currentScreen.WorkingArea.X, currentScreen.WorkingArea.Y, currentScreen.WorkingArea.Width / 2, currentScreen.WorkingArea.Height));
                 }
                 else if (Control.MousePosition.Y < currentScreen.Bounds.Top + 2)
                 {
-                    screen = ScreenState.Top;
+                    screenState = ScreenState.Top;
                     Shadows.FillShadow(new Rectangle(currentScreen.WorkingArea.X, currentScreen.WorkingArea.Y, currentScreen.WorkingArea.Width, currentScreen.WorkingArea.Height / 2));
                 }
                 else if (Control.MousePosition.Y > currentScreen.Bounds.Bottom - 2)
                 {
-                    screen = ScreenState.Bottom;
+                    screenState = ScreenState.Bottom;
                     Shadows.FillShadow(new Rectangle(currentScreen.WorkingArea.X, currentScreen.WorkingArea.Height / 2 + currentScreen.WorkingArea.Y, currentScreen.WorkingArea.Width, currentScreen.WorkingArea.Height / 2));
                 }
                 else
                 {
-                    if (screen != ScreenState.Full)
+                    if (screenState != ScreenState.Full)
                     {
-                        screen = ScreenState.None;
+                        screenState = ScreenState.None;
                     }
                     Shadows.ClearShadow();
                 }
 
                 #endregion
 
-                if (screen != ScreenState.Full)
+                if (screenState != ScreenState.Full)
                 {
                     if (AtBorderline == true)
                     {
-                        screen = ScreenState.None;
+                        screenState = ScreenState.None;
                         this.TopMost = false;
                         this.Width = ScreenBeforeWidth;
                         this.Height = ScreenBeforeHeight;
@@ -989,7 +944,7 @@ namespace Feep
 
                 MovedWindow = true;
             }
-            else if ((bool)flag == false && !IsLoseControl)
+            else if ((bool)cursorState == false && !IsLoseControl)
             {
                 if (Cursor.Position.X == Center.X && Cursor.Position.Y == Center.Y)
                     return;
@@ -1001,12 +956,12 @@ namespace Feep
                 bool ImmovableX = false;
                 bool ImmovableY = false;
 
-                if (image.Width < this.Width)
+                if (Picture.Image.Width < this.Width)
                 {
                     ImmovableX = true;
                 }
 
-                if (image.Height < this.Height)
+                if (Picture.Image.Height < this.Height)
                 {
                     ImmovableY = true;
                 }
@@ -1015,30 +970,30 @@ namespace Feep
                 {
                     DistanceX = 0;
                 }
-                if (DistanceX < (this.Width - image.Width))
+                if (DistanceX < (this.Width - Picture.Image.Width))
                 {
-                    DistanceX = this.Width - image.Width;
+                    DistanceX = this.Width - Picture.Image.Width;
                 }
                 if (DistanceY > 0)
                 {
                     DistanceY = 0;
                 }
-                if (DistanceY < (this.Height - image.Height))
+                if (DistanceY < (this.Height - Picture.Image.Height))
                 {
-                    DistanceY = this.Height - image.Height;
+                    DistanceY = this.Height - Picture.Image.Height;
                 }
 
                 if (ImmovableX == true && ImmovableY == true)
                 {
-                    Picture.Location = new Point((this.Width - image.Width) / 2, (this.Height - image.Height) / 2);
+                    Picture.Location = new Point((this.Width - Picture.Image.Width) / 2, (this.Height - Picture.Image.Height) / 2);
                 }
                 else if (ImmovableX == true)
                 {
-                    Picture.Location = new Point((this.Width - image.Width) / 2, DistanceY);
+                    Picture.Location = new Point((this.Width - Picture.Image.Width) / 2, DistanceY);
                 }
                 else if (ImmovableY == true)
                 {
-                    Picture.Location = new Point(DistanceX, (this.Height - image.Height) / 2);
+                    Picture.Location = new Point(DistanceX, (this.Height - Picture.Image.Height) / 2);
                 }
                 else
                 {
@@ -1067,9 +1022,9 @@ namespace Feep
                 if (RightButtonsPress == true && LeftButtonsPress == false)
                 {
                     IsRotation = true;
-                    image.RotateFlip(RotateFlipType.Rotate270FlipNone);
-                    Picture.Width = image.Width;
-                    Picture.Height = image.Height;
+                    Picture.Image.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                    Picture.Width = Picture.Image.Width;
+                    Picture.Height = Picture.Image.Height;
                     ChangeSize();
                     Picture.Refresh();
                     return;
@@ -1080,7 +1035,7 @@ namespace Feep
                     return;
                 }
 
-                Next();
+                PreviousPicture();
 
             }
             else if (e.Delta < 0)
@@ -1088,9 +1043,9 @@ namespace Feep
                 if (RightButtonsPress == true && LeftButtonsPress == false)
                 {
                     IsRotation = true;
-                    image.RotateFlip(RotateFlipType.Rotate90FlipNone);
-                    Picture.Width = image.Width;
-                    Picture.Height = image.Height;
+                    Picture.Image.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                    Picture.Width = Picture.Image.Width;
+                    Picture.Height = Picture.Image.Height;
                     ChangeSize();
                     Picture.Refresh();
                     return;
@@ -1101,13 +1056,64 @@ namespace Feep
                     return;
                 }
 
-                Previous();
+                NextPicture();
 
             }
         }
 
         private void Viewer_KeyUp(object sender, KeyEventArgs e)
         {
+
+            if (e.KeyCode == Keys.Delete)
+            {
+                if (IsLockZoom | LeftButtonsPress)
+                {
+                    return;
+                }
+
+                try
+                {
+                    string filePath = filePaths[Index];
+
+                    Picture.Image.Dispose();
+
+                    filePaths.RemoveAt(Index);
+
+                    if (filePaths.Count < 1)
+                    {
+                        if (e.Shift)
+                        {
+                            DeleteFile(filePath, false);
+                        }
+                        else
+                        {
+                            DeleteFile(filePath, true);
+                        }
+
+                        Exit();
+                        return;
+                    }
+                    else
+                    {
+                        ShowPicture(Index < filePaths.Count ? Index : Index = 0, true);
+                        System.Media.SystemSounds.Exclamation.Play();
+
+                        if (e.Shift)
+                        {
+                            DeleteFile(filePath, false);
+                        }
+                        else
+                        {
+                            DeleteFile(filePath, true);
+                        }
+                    }
+
+                }
+                catch
+                {
+                    return;
+                }
+            }
 
             if (!e.Control && !e.Shift && !e.Alt)
             {
@@ -1130,28 +1136,28 @@ namespace Feep
                         }
                     case Keys.Up:
                         {
-                            Next();
+                            PreviousPicture();
                             break;
                         }
                     case Keys.Down:
                         {
-                            Previous();
+                            NextPicture();
                             break;
                         }
                     case Keys.Left:
                         {
-                            image.RotateFlip(RotateFlipType.Rotate270FlipNone);
-                            Picture.Width = image.Width;
-                            Picture.Height = image.Height;
+                            Picture.Image.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                            Picture.Width = Picture.Image.Width;
+                            Picture.Height = Picture.Image.Height;
                             ChangeSize();
                             Picture.Refresh();
                             break;
                         }
                     case Keys.Right:
                         {
-                            image.RotateFlip(RotateFlipType.Rotate90FlipNone);
-                            Picture.Width = image.Width;
-                            Picture.Height = image.Height;
+                            Picture.Image.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                            Picture.Width = Picture.Image.Width;
+                            Picture.Height = Picture.Image.Height;
                             ChangeSize();
                             Picture.Refresh();
                             break;
@@ -1167,66 +1173,17 @@ namespace Feep
                 {
                     case Keys.A:
                         {
-                            Clipboard.SetText(filePaths[index]);
+                            Clipboard.SetText(filePaths[Index]);
                             break;
                         }
                     case Keys.B:
                         {
-                            if (!timerBackColor.Enabled)
-                            {
-                                Hue = randomBackColor.Next(0, 360);
-                                Saturation = randomBackColor.Next(53, 79) / 100f;
-                                Brightness = randomBackColor.Next(43, 53) / 100f;
-                                timerBackColor.Start();
-                            }
-                            else
-                            {
-                                timerBackColor.Stop();
-                            }
-
+                            System.Diagnostics.Process.Start("explorer.exe", @"/select, " + filePaths[Index]);
                             break;
                         }
                     case Keys.C:
                         {
                             Clipboard.SetImage(Picture.Image);
-                            break;
-                        }
-                }
-            }
-
-            if (e.Shift)
-            {
-                switch (e.KeyCode)
-                {
-                    case Keys.Delete:
-                        {
-                            if (IsLockZoom | LeftButtonsPress)
-                            {
-                                return;
-                            }
-
-                            try
-                            {
-                                image.Dispose();
-                                File.Delete(filePaths[index]);
-                                filePaths.RemoveAt(index);
-                                if (filePaths.Count < 1)
-                                {
-                                    Exit();
-                                    return;
-                                }
-                                Show(index < filePaths.Count ? filePaths[index] : filePaths[index = 0]);
-                                System.Media.SystemSounds.Exclamation.Play();
-                            }
-                            catch
-                            {
-                            }
-                            break;
-                        }
-                    case Keys.Enter:
-                        {
-                            System.Diagnostics.Process.Start("explorer.exe", @"/select, " + filePaths[index]);
-                            Exit();
                             break;
                         }
                 }
