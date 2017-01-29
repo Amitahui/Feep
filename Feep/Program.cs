@@ -6,6 +6,7 @@ namespace Feep
 {
     static class Program
     {
+
         [STAThread]
         static void Main(String[] args)
         {

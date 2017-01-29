@@ -130,7 +130,9 @@ namespace Feep
         //图片
         Bitmap image;
         //缓存
-        Bitmap cache;
+        Dictionary<string, Bitmap> cache = new Dictionary<string, Bitmap>();
+        //建立缓存的时间
+        Queue<long> buildCacheTime = new Queue<long>();
         //调整窗体大小时的方向
         Direction direction;
         //屏幕模式
@@ -212,56 +214,69 @@ namespace Feep
 
         internal void ShowPicture(int index, bool orientation)
         {
-            try
-            {
-                string PicturePath = filePaths[index];
-                this.Text = PicturePath;
+            string PicturePath = filePaths[index];
+            this.Text = PicturePath;
+            Picture.Tag = PicturePath;
+            bool hitCache = false;
 
-                if (cache != null && PicturePath == cache.Tag.ToString())
+            if (cache.ContainsKey(PicturePath))
+            {
+                try
                 {
                     image.Dispose();
-                    Picture.Image = cache;
-                    Picture.Width = cache.Width;
-                    Picture.Height = cache.Height;
+                    Picture.Image = cache[PicturePath];
+                    Picture.Width = Picture.Image.Width;
+                    Picture.Height = Picture.Image.Height;
+                    hitCache = true;
                 }
-                else
+                catch
                 {
-                    if (cache != null)
+                    lock (cache)
                     {
-                        cache.Dispose();
+                        cache[PicturePath].Dispose();
+                        cache.Remove(PicturePath);
                     }
+                }
+            }
+
+            if (hitCache == false)
+            {
+
+                try
+                {
                     image = new Bitmap(PicturePath);
                     Picture.Image = image;
                     Picture.Width = image.Width;
                     Picture.Height = image.Height;
                 }
-
-                ChangeSize();
-                Picture.Show();
-                Index = index;
-            }
-            catch
-            {
-                if (orientation)
+                catch
                 {
-                    ShowPicture(NextFilePath(index), orientation);
-                }
-                else
-                {
-                    ShowPicture(PreviousFilePath(index), orientation);
-                }
+                    if (orientation)
+                    {
+                        ShowPicture(NextFilePath(index), orientation);
+                    }
+                    else
+                    {
+                        ShowPicture(PreviousFilePath(index), orientation);
+                    }
 
-                filePaths.RemoveAt(index);
+                    filePaths.RemoveAt(index);
 
-                if (filePaths.Count == 0)
-                {
-                    this.Dispose();
-                    Application.Exit();
+                    if (filePaths.Count == 0)
+                    {
+                        this.Dispose();
+                        Application.Exit();
+                    }
                 }
             }
+
+            ChangeSize();
+            Picture.Show();
+            Index = index;
 
             new Thread(action =>
             {
+                lock (cache)
                 BuildCache(orientation);
             }).Start();
 
@@ -279,7 +294,6 @@ namespace Feep
 
         private void PreviousPicture()
         {
-            Picture.Image.Dispose();
             ShowPicture(PreviousFilePath(Index), false);
             if ((Index == filePaths.Count - 1))
             {
@@ -289,7 +303,6 @@ namespace Feep
 
         private void NextPicture()
         {
-            Picture.Image.Dispose();
             ShowPicture(NextFilePath(Index), true);
             if (Index == 0)
             {
@@ -417,50 +430,123 @@ namespace Feep
 
         private void BuildCache(bool orientation)
         {
-            int index = Index;
-
             try
             {
-                if (orientation)
+                lock (cache)
                 {
-                    index = NextFilePath(index);
-                }
-                else
-                {
-                    index = PreviousFilePath(index);
-                }
-
-                cache = new Bitmap(filePaths[index]);
-                cache.Tag = filePaths[index];
-            }
-            catch
-            {
-                filePaths.RemoveAt(index);
-                BuildCache(orientation);
-            }
-        }
-
-        private void DeleteFile(string filePath, bool sendToRecycleBin)
-        {
-            new Thread(action =>
-            {
-                while (File.Exists(filePath))
-                {
-                    try
+                    long now = DateTime.Now.Ticks;
+                    buildCacheTime.Enqueue(now);
+                    while (now - buildCacheTime.Peek() > 10000000)
                     {
-                        if (sendToRecycleBin)
+                        buildCacheTime.Dequeue();
+                    }
+
+                    int index = Index;
+                    List<string> trash = new List<string>();
+
+                    if (orientation)
+                    {
+                        List<string> temp = new List<string>();
+                        temp.Add(filePaths[PreviousFilePath(index)]);
+
+                        do
                         {
-                            Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(filePath, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                            temp.Add(filePaths[index]);
+                            index = NextFilePath(index);
+                        }
+                        while (cache.ContainsKey(filePaths[index]));
+
+                        foreach (string item in cache.Keys)
+                        {
+                            if ((!temp.Contains(item)) && item != Picture.Tag.ToString())
+                            {
+                                trash.Add(item);
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        List<string> temp = new List<string>();
+                        temp.Add(filePaths[NextFilePath(index)]);
+
+                        do
+                        {
+                            temp.Add(filePaths[index]);
+                            index = PreviousFilePath(index);
+                        }
+                        while (cache.ContainsKey(filePaths[index]));
+
+                        foreach (string item in cache.Keys)
+                        {
+                            if ((!temp.Contains(item)) && item != Picture.Tag.ToString())
+                            {
+                                trash.Add(item);
+                            }
+                        }
+                    }
+
+                    foreach (string item in trash)
+                    {
+                        cache[item].Dispose();
+                        cache.Remove(item);
+                    }
+
+                    index = Index;
+
+                    for (int i = 0; i < buildCacheTime.Count; i++)
+                    {
+                        if (orientation)
+                        {
+                            index = NextFilePath(index);
                         }
                         else
                         {
-                            File.Delete(filePath);
+                            index = PreviousFilePath(index);
+                        }
+
+                        if (!cache.ContainsKey(filePaths[index]))
+                        {
+                            cache.Add(filePaths[index], new Bitmap(filePaths[index]));
                         }
                     }
-                    catch
+
+                }
+            }
+            catch
+            {
+                return;
+            }
+        }
+
+        private void DeleteFile(Image image, string filePath, bool sendToRecycleBin)
+        {
+            new Thread(action =>
+            {
+                try
+                {
+                    image.Dispose();
+
+                    if (filePaths.Count < 1)
                     {
-                        Thread.Sleep(100);
+                        foreach (Bitmap item in cache.Values)
+                        {
+                            item.Dispose();
+                        }
                     }
+
+                    if (sendToRecycleBin)
+                    {
+                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(filePath, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                    }
+                    else
+                    {
+                        File.Delete(filePath);
+                    }
+                }
+                catch
+                {
+                    return;
                 }
                 Thread.CurrentThread.Abort();
             }).Start();
@@ -1075,21 +1161,21 @@ namespace Feep
                 {
                     string filePath = filePaths[Index];
 
-                    Picture.Image.Dispose();
+                    Image image = Picture.Image;
 
                     filePaths.RemoveAt(Index);
 
+                    if (e.Shift)
+                    {
+                        DeleteFile(image, filePath, false);
+                    }
+                    else
+                    {
+                        DeleteFile(image, filePath, true);
+                    }
+
                     if (filePaths.Count < 1)
                     {
-                        if (e.Shift)
-                        {
-                            DeleteFile(filePath, false);
-                        }
-                        else
-                        {
-                            DeleteFile(filePath, true);
-                        }
-
                         Exit();
                         return;
                     }
@@ -1097,15 +1183,6 @@ namespace Feep
                     {
                         ShowPicture(Index < filePaths.Count ? Index : Index = 0, true);
                         System.Media.SystemSounds.Exclamation.Play();
-
-                        if (e.Shift)
-                        {
-                            DeleteFile(filePath, false);
-                        }
-                        else
-                        {
-                            DeleteFile(filePath, true);
-                        }
                     }
 
                 }
