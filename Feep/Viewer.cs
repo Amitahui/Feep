@@ -278,6 +278,7 @@ namespace Feep
             {
                 lock (cache)
                 BuildCache(orientation);
+                Thread.CurrentThread.Abort();
             }).Start();
 
         }
@@ -454,7 +455,7 @@ namespace Feep
                             temp.Add(filePaths[index]);
                             index = NextFilePath(index);
                         }
-                        while (cache.ContainsKey(filePaths[index]));
+                        while (cache.ContainsKey(filePaths[index]) && !temp.Contains(filePaths[index]));
 
                         foreach (string item in cache.Keys)
                         {
@@ -475,7 +476,7 @@ namespace Feep
                             temp.Add(filePaths[index]);
                             index = PreviousFilePath(index);
                         }
-                        while (cache.ContainsKey(filePaths[index]));
+                        while (cache.ContainsKey(filePaths[index]) && !temp.Contains(filePaths[index]));
 
                         foreach (string item in cache.Keys)
                         {
