@@ -184,6 +184,12 @@ namespace Feep
         static Shadow Shadows;
         //启动时的窗体状态
         internal int StartState;
+        //幻灯片定时器
+        private System.Windows.Forms.Timer timerSlideshow = new System.Windows.Forms.Timer();
+        //幻灯片时间间隔
+        private int intervalSlideshow = 1;
+        //幻灯片方向
+        private bool directionSlideshow = true;
 
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
@@ -207,6 +213,7 @@ namespace Feep
             Picture.MouseUp += new MouseEventHandler(Viewer_MouseUp);
             Picture.MouseMove += new MouseEventHandler(Viewer_MouseMove);
             this.MouseWheel += Viewer_MouseWheel;
+            timerSlideshow.Tick += TimerSlideshow_Tick;
 
             Shadows = new Shadow();
 
@@ -295,6 +302,7 @@ namespace Feep
 
         private void PreviousPicture()
         {
+            directionSlideshow = false;
             ShowPicture(PreviousFilePath(Index), false);
             if ((Index == filePaths.Count - 1))
             {
@@ -304,6 +312,7 @@ namespace Feep
 
         private void NextPicture()
         {
+            directionSlideshow = true;
             ShowPicture(NextFilePath(Index), true);
             if (Index == 0)
             {
@@ -642,6 +651,8 @@ namespace Feep
 
         private void Viewer_MouseDown(object sender, MouseEventArgs e)
         {
+            timerSlideshow.Stop();
+
             if (IsClose == true)
             {
                 return;
@@ -777,6 +788,8 @@ namespace Feep
 
         private void Viewer_MouseUp(object sender, MouseEventArgs e)
         {
+            timerSlideshow.Stop();
+
             if (IsLockZoom)
             {
                 if (e.Button == MouseButtons.Middle && !IsLoseControl)
@@ -1099,6 +1112,8 @@ namespace Feep
 
         private void Viewer_MouseWheel(object sender, MouseEventArgs e)
         {
+            timerSlideshow.Stop();
+
             if (IsLockZoom)
             {
                 return;
@@ -1150,6 +1165,82 @@ namespace Feep
 
         private void Viewer_KeyUp(object sender, KeyEventArgs e)
         {
+            if (!e.Control && !e.Shift && !e.Alt)
+            {
+                switch (e.KeyCode)
+                {
+                    case Keys.D0:
+                        {
+                            intervalSlideshow = intervalSlideshow == 100000 ? intervalSlideshow : 10 * intervalSlideshow;
+                            return;
+                        }
+                    case Keys.D1:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 1000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                    case Keys.D2:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 2000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                    case Keys.D3:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 3000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                    case Keys.D4:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 4000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                    case Keys.D5:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 5000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                    case Keys.D6:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 6000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                    case Keys.D7:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 7000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                    case Keys.D8:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 8000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                    case Keys.D9:
+                        {
+                            timerSlideshow.Interval = intervalSlideshow * 9000;
+                            timerSlideshow.Start();
+                            intervalSlideshow = 1;
+                            return;
+                        }
+                }
+            }
+
+            timerSlideshow.Stop();
 
             if (e.KeyCode == Keys.Delete)
             {
@@ -1161,9 +1252,7 @@ namespace Feep
                 try
                 {
                     string filePath = filePaths[Index];
-
                     Image image = Picture.Image;
-
                     filePaths.RemoveAt(Index);
 
                     if (e.Shift)
@@ -1265,6 +1354,19 @@ namespace Feep
                             break;
                         }
                 }
+            }
+
+        }
+
+        private void TimerSlideshow_Tick(object sender, EventArgs e)
+        {
+            if (directionSlideshow)
+            {
+                NextPicture();
+            }
+            else
+            {
+                PreviousPicture();
             }
 
         }
