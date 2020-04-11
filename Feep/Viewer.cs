@@ -219,6 +219,44 @@ namespace Feep
 
         }
 
+        internal void RotateImage(Bitmap bitmap)
+        {
+            try
+            {
+                switch (bitmap.GetPropertyItem(274).Value[0])
+                {
+                    case 1:
+                        break;
+                    case 2:
+                        bitmap.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                        break;
+                    case 3:
+                        bitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);
+                        break;
+                    case 4:
+                        bitmap.RotateFlip(RotateFlipType.Rotate180FlipX);
+                        break;
+                    case 5:
+                        bitmap.RotateFlip(RotateFlipType.Rotate90FlipX);
+                        break;
+                    case 6:
+                        bitmap.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                        break;
+                    case 7:
+                        bitmap.RotateFlip(RotateFlipType.Rotate270FlipX);
+                        break;
+                    case 8:
+                        bitmap.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch
+            {
+            }
+        }
+
         internal void ShowPicture(int index, bool orientation)
         {
             string PicturePath = filePaths[index];
@@ -252,6 +290,7 @@ namespace Feep
                 try
                 {
                     image = new Bitmap(PicturePath);
+                    RotateImage(image);
                     Picture.Image = image;
                     Picture.Width = image.Width;
                     Picture.Height = image.Height;
@@ -284,7 +323,7 @@ namespace Feep
             new Thread(action =>
             {
                 lock (cache)
-                BuildCache(orientation);
+                    BuildCache(orientation);
                 Thread.CurrentThread.Abort();
             }).Start();
 
@@ -517,7 +556,9 @@ namespace Feep
 
                         if (!cache.ContainsKey(filePaths[index]))
                         {
-                            cache.Add(filePaths[index], new Bitmap(filePaths[index]));
+                            Bitmap bitmap = new Bitmap(filePaths[index]);
+                            RotateImage(bitmap);
+                            cache.Add(filePaths[index], bitmap);
                         }
                     }
 
